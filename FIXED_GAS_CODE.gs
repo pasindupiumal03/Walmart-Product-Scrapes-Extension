@@ -300,9 +300,16 @@ function validate(text, flaggedTerms) {
 
   if (lines.length < 7) throw new Error('Incomplete AI output');
 
-  const title = lines[0];
+  let title = lines[0];
+  // Remove Markdown bolding from title (**Title**)
+  title = title.replace(/^\*\*|\*\*$/g, '').trim();
+
   const bullets = lines.slice(1, 6);
-  const description = lines.slice(6).join(' ');
+  let description = lines.slice(6).join(' ');
+  
+  // Remove "Product Description" header if present
+  description = description.replace(/\*\*Product Description\*\*:?/gi, '').trim();
+  description = description.replace(/^Product Description:?/gi, '').trim();
 
   if (title.length > 200) throw new Error('Title too long (Max 200)');
   if (bullets.length !== 5) throw new Error('Must have exactly 5 bullets');

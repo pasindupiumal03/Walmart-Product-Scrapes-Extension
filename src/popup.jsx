@@ -22,9 +22,9 @@ function Popup() {
   const [error, setError] = useState('');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  // Load saved GAS endpoint on mount
+  // Load saved settings on mount
   useEffect(() => {
-    loadGasEndpoint();
+    loadSettings();
   }, []);
 
   // Poll job status when generation is active
@@ -35,33 +35,36 @@ function Popup() {
   }, [isGenerating, currentJobId]);
 
   /**
-   * Load saved GAS endpoint from storage
+   * Load saved settings from storage
    */
-  const loadGasEndpoint = async () => {
+  const loadSettings = async () => {
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'GET_GAS_ENDPOINT',
-      });
-
-      if (response.success && response.gasEndpoint) {
-        setGasEndpoint(response.gasEndpoint);
-      }
+      const result = await chrome.storage.local.get(['gasEndpoint', 'sheetUrl']);
+      if (result.gasEndpoint) setGasEndpoint(result.gasEndpoint);
+      if (result.sheetUrl) setSheetUrl(result.sheetUrl);
     } catch (err) {
-      console.error('Error loading GAS endpoint:', err);
+      console.error('Error loading settings:', err);
     }
   };
 
   /**
-   * Save GAS endpoint to storage
+   * Save settings to storage
    */
-  const saveGasEndpoint = async (endpoint) => {
+  const handleSaveSettings = async () => {
     try {
-      await chrome.runtime.sendMessage({
+      await chrome.storage.local.set({
+        gasEndpoint,
+        sheetUrl
+      });
+      addLog('Settings saved!', 'success');
+      // Pass the endpoint to background for internal use
+      chrome.runtime.sendMessage({
         action: 'SAVE_GAS_ENDPOINT',
-        data: { gasEndpoint: endpoint },
+        data: { gasEndpoint }
       });
     } catch (err) {
-      console.error('Error saving GAS endpoint:', err);
+      console.error('Error saving settings:', err);
+      addLog('Failed to save settings', 'error');
     }
   };
 
@@ -108,8 +111,8 @@ function Popup() {
     setError('');
     setProgress({ current: 0, total: 0 });
 
-    // Save GAS endpoint for future use
-    await saveGasEndpoint(gasEndpoint);
+    // Save settings automatically on run
+    await handleSaveSettings();
 
     addLog('Starting listing generation...', 'info');
 
@@ -152,13 +155,23 @@ function Popup() {
   /**
    * Reset form and state
    */
-  const handleReset = () => {
+  const handleReset = async () => {
+    // Clear State
     setSheetUrl('');
+    setGasEndpoint('');
     setIsGenerating(false);
     setCurrentJobId(null);
     setLogs([]);
     setError('');
     setProgress({ current: 0, total: 0 });
+
+    // Clear Storage ('until reset')
+    try {
+      await chrome.storage.local.remove(['sheetUrl', 'gasEndpoint']);
+      addLog('Settings cleared from storage.', 'info');
+    } catch (e) {
+      console.error('Error clearing storage:', e);
+    }
   };
 
   return (
@@ -225,6 +238,15 @@ function Popup() {
 
         {/* Action Buttons */}
         <div className="button-group">
+          <button
+            onClick={handleSaveSettings}
+            disabled={isGenerating}
+            className="btn btn-secondary"
+            style={{ marginRight: '8px' }}
+          >
+            Save Settings
+          </button>
+
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !sheetUrl || !gasEndpoint}
