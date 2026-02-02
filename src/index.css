@@ -1,0 +1,321 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  overflow: hidden;
+}
+
+body {
+  width: 450px;
+  height: 650px;
+  min-height: 650px;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+#react-target {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* ===== Popup Container ===== */
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.popup-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  text-align: center;
+  border-bottom: 2px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.popup-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.popup-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.popup-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.popup-footer {
+  padding: 12px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ===== Input Groups ===== */
+.input-group {
+  margin-bottom: 18px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-field:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input-hint {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* ===== Buttons ===== */
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+/* ===== Error Message ===== */
+.error-message {
+  padding: 12px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.error-message span {
+  font-size: 13px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* ===== Progress ===== */
+.progress-container {
+  margin-bottom: 18px;
+  padding: 14px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.progress-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0369a1;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0f2fe;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* ===== Log Container ===== */
+.log-container {
+  margin-top: 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 250px;
+  background: #ffffff;
+}
+
+.log-header {
+  padding: 10px 14px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.log-content {
+  max-height: 210px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.log-entry {
+  display: flex;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.log-timestamp {
+  font-weight: 600;
+  min-width: 75px;
+  color: #6b7280;
+}
+
+.log-message {
+  flex: 1;
+  word-break: break-word;
+}
+
+.log-info {
+  background: #f0f9ff;
+  border-left: 3px solid #0ea5e9;
+}
+
+.log-info .log-message {
+  color: #0369a1;
+}
+
+.log-success {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+}
+
+.log-success .log-message {
+  color: #166534;
+  font-weight: 500;
+}
+
+.log-error {
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+}
+
+.log-error .log-message {
+  color: #991b1b;
+  font-weight: 500;
+}
+
+/* ===== Scrollbar Styling ===== */
+.log-content::-webkit-scrollbar,
+.popup-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-content::-webkit-scrollbar-track,
+.popup-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.log-content::-webkit-scrollbar-thumb,
+.popup-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover,
+.popup-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

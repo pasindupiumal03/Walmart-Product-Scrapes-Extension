@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Walmart Listing Generator",
+  "version": "1.0.0",
+  "description": "Automate Walmart product listing generation using Google Sheets and AI",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://script.google.com/*",
+    "https://docs.google.com/*",
+    "https://www.walmart.com/*",
+    "https://i5.walmartimages.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "./assets/icons/16.png",
+      "32": "./assets/icons/32.png",
+      "48": "./assets/icons/48.png",
+      "128": "./assets/icons/128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "./assets/icons/16.png",
+    "32": "./assets/icons/32.png",
+    "48": "./assets/icons/48.png",
+    "64": "./assets/icons/64.png",
+    "128": "./assets/icons/128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
