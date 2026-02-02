@@ -105,11 +105,22 @@ function getPendingItems(sheetUrl) {
   // Start from row 2 (index 1) to skip header
   for (let i = 1; i < rows.length; i++) {
     const [url, keywords, title, bullets, desc, status] = rows[i];
-    // If URL exists AND it's not marked DONE
-    if (url && (status !== 'DONE' && status !== 'done')) {
+    
+    // Check if status indicates completion
+    const statusStr = String(status || '').trim();
+    const isDone = statusStr.toUpperCase().startsWith('DONE');
+    
+    // Normalize Input: If it's just an ID (digits), convert to URL
+    let inputStr = String(url || '').trim();
+    if (inputStr && !inputStr.startsWith('http')) {
+        inputStr = `https://www.walmart.com/ip/${inputStr}`;
+    }
+
+    // If URL/ID exists AND it's not marked DONE
+    if (inputStr && !isDone) {
       pending.push({
         row: i + 1, // 1-based row index
-        url: url,
+        url: inputStr,
         keywords: keywords
       });
     }
@@ -142,8 +153,22 @@ function processRowWithData(sheetUrl, rowNumber, productData, keywords) {
     return { status: finalStatus, title: parsed.title };
 
   } catch (err) {
-    sheet.getRange(rowNumber, 6).setValue('ERROR: ' + err.message);
-    throw err;
+    const errorMsg = err.message || '';
+    let simpleMsg = 'Failed';
+
+    if (errorMsg.includes('429') || errorMsg.includes('Quota')) {
+        simpleMsg = 'Quota Exceeded';
+    } else if (errorMsg.includes('API key not set')) {
+        simpleMsg = 'API Key Missing';
+    } else if (errorMsg.includes('401')) {
+        simpleMsg = 'Invalid API Key';
+    } 
+    // All other errors (Timeout, Image, Parsing) default to 'Failed'
+    
+    sheet.getRange(rowNumber, 6).setValue(simpleMsg);
+    
+    // We do NOT re-throw, so the loop continues
+    return { status: simpleMsg, error: errorMsg };
   }
 }
 
@@ -169,34 +194,63 @@ function loadFlaggedTerms() {
 }
 
 /***********************
+ * CONFIGURATION
+ ***********************/
+// PASTE YOUR OPENAI API KEY HERE DIRECTLY:
+const OPENAI_API_KEY = 'sk-proj-YOUR_NEW_KEY_HERE'; 
+
+/***********************
  * OPENAI CALL
  ***********************/
 function callOpenAI(product, keywords, flaggedTerms) {
-  const key = PropertiesService.getScriptProperties().getProperty('OPENAI_KEY');
-  if (!key) throw new Error('OpenAI API key not set');
+  // Use the direct constant or fallback to Properties if constant is placeholder
+  let key = OPENAI_API_KEY;
+  if (!key || key.includes('YOUR_NEW_KEY')) {
+      key = PropertiesService.getScriptProperties().getProperty('OPENAI_KEY');
+  }
+  
+  if (!key) throw new Error('OpenAI API key not set. Please paste it in the OPENAI_API_KEY constant at the top of the script.');
 
   // Construct message with images for Vision model
+  // Use rich context if available, otherwise fallback to basic metadata
+  let promptText = '';
+  if (product.richContext) {
+     promptText = `
+${product.richContext}
+
+Target Keywords: ${keywords}
+Flagged Terms: ${flaggedTerms.join(', ')}
+`;
+  } else {
+     promptText = `Brand: ${product.brand}\nProduct Name: ${product.name}\nSize: ${product.size}\nKeywords: ${keywords}\nFlagged Terms: ${flaggedTerms.join(', ')}`;
+  }
+
   const userContent = [
     {
       type: "text",
-      text: `Brand: ${product.brand}\nProduct Name: ${product.name}\nSize: ${product.size}\nKeywords: ${keywords}\nFlagged Terms: ${flaggedTerms.join(', ')}`
+      text: promptText
     }
   ];
 
-  // Add images to payload (GPT-4o Vision)
+  // Add images to payload (GPT-4o Vision or mini)
   if (product.images && Array.isArray(product.images)) {
     product.images.forEach(url => {
+      // Clean URL to remove resizing parameters (reduces errors)
+      // e.g. .jpeg?odnHeight=117 -> .jpeg
+      let cleanUrl = url.split('?')[0];
+      
       userContent.push({
         type: "image_url",
         image_url: {
-          url: url
+          url: cleanUrl
         }
       });
     });
   }
 
   const payload = {
-    model: 'gpt-4o', 
+    // try gpt-4o-mini first as it is cheaper and has higher limits for some tiers
+    model: 'gpt-4o-mini', 
     temperature: 0.3,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -204,23 +258,38 @@ function callOpenAI(product, keywords, flaggedTerms) {
     ]
   };
 
-  const res = UrlFetchApp.fetch(
-    'https://api.openai.com/v1/chat/completions',
-    {
-      method: 'post',
-      contentType: 'application/json',
-      headers: {
-        Authorization: 'Bearer ' + key
-      },
-      payload: JSON.stringify(payload)
-    }
-  );
+  try {
+    const res = UrlFetchApp.fetch(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        method: 'post',
+        contentType: 'application/json',
+        headers: {
+          Authorization: 'Bearer ' + key
+        },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true // Capture 429 errors gracefully
+      }
+    );
 
-  const responseJson = JSON.parse(res.getContentText());
-  if (responseJson.error) {
-    throw new Error('OpenAI Error: ' + responseJson.error.message);
+    const responseCode = res.getResponseCode();
+    const responseText = res.getContentText();
+    const responseJson = JSON.parse(responseText);
+
+    if (responseCode !== 200) {
+       // Log the key prefix for debugging (first 7 chars)
+       const keyPrefix = key.substring(0, 7) + '...';
+       throw new Error(`OpenAI Error (${responseCode}) with key ${keyPrefix}: ${responseJson.error?.message || responseText}`);
+    }
+
+    return responseJson.choices[0].message.content;
+
+  } catch (e) {
+    if (e.message.includes('429')) {
+       throw new Error("Quota Exceeded (429). Please check your OpenAI billing settings. You may need to add credit balance.");
+    }
+    throw e;
   }
-  return responseJson.choices[0].message.content;
 }
 
 /***********************
@@ -235,8 +304,13 @@ function validate(text, flaggedTerms) {
   const bullets = lines.slice(1, 6);
   const description = lines.slice(6).join(' ');
 
-  if (title.length > 70) throw new Error('Title too long');
+  if (title.length > 200) throw new Error('Title too long (Max 200)');
   if (bullets.length !== 5) throw new Error('Must have exactly 5 bullets');
+
+  if (title.length > 75) {
+      // Add to warnings instead of failing
+      // We will handle this in the warning collection below
+  }
 
   bullets.forEach(b => {
     if (b.length > 80) throw new Error('Bullet too long');
@@ -251,6 +325,11 @@ function validate(text, flaggedTerms) {
   const combined = (title + bullets.join(' ') + description).toLowerCase();
   
   const foundTerms = [];
+
+  if (title.length > 75) {
+      foundTerms.push(`Title length (${title.length}) > 75`);
+  }
+
   flaggedTerms.forEach(t => {
     // Escape regex
     const escapedTerm = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

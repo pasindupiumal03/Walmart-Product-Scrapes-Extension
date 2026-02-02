@@ -8,6 +8,8 @@ module.exports = {
     popup: "./src/popup.jsx",
     content: "./src/content.jsx",
     background: "./src/background.jsx",
+    contentScript: "./src/contentScript.js",
+    offscreen: "./src/offscreen.js",
     "shadow-root": "./src/shadow-root.css",
   },
   output: {
@@ -65,6 +67,11 @@ module.exports = {
       template: "./src/popup.html",
       filename: "popup.html",
       chunks: ["popup"],
+    }),
+    new HtmlWebpackPlugin({
+      template: "./src/offscreen.html",
+      filename: "offscreen.html",
+      chunks: ["offscreen"],
     }),
     new MiniCssExtractPlugin({
       filename: "[name].css",
